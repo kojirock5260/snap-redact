@@ -6,8 +6,16 @@ Last updated: 2026-08-10
 
 ## Summary
 
-The extension collects nothing, sends nothing, and has no server.
-Your screenshots stay on your machine.
+The extension has no server, and nothing it touches ever leaves your machine.
+
+It does handle one kind of user data, and only one: the picture it takes of the
+page you asked it to capture. A picture of a page is website content, so it is
+disclosed as such. That picture is produced on your device, kept only in the
+memory of the page while you are editing it, and handed straight to your
+clipboard or your downloads folder. It is never transmitted anywhere, and the
+extension keeps no copy of it.
+
+Nothing else is read, stored, or sent.
 
 ## What is stored, and where
 
@@ -42,11 +50,21 @@ for a capture, and that access ends when you leave the page.
 
 The picture is drawn into a canvas inside the page and never leaves it.
 
+The extension also reads the address of that one tab, at that moment, for a
+single decision: whether the page can be captured at all. Chrome forbids
+extensions from running on its own pages and on the Web Store, so those are
+refused before anything else happens. The address is used for that check and
+then discarded. No list of addresses is built, kept, or sent.
+
 ## What is not collected
 
 - Personally identifiable information
 - Health, financial, or authentication information
-- Location, browsing history, or web page contents
+- Location
+- Browsing history. The extension holds no `history` permission and cannot see
+  the pages you have visited
+- The text, forms, cookies or scripts of the page. The extension reads a picture
+  of what is already on screen, not the document behind it
 - Usage or telemetry data of any kind
 
 ## Permissions
