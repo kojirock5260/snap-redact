@@ -1,0 +1,53 @@
+{
+  "appDesc": {
+    "message": "範囲を選んで、隠して、囲って、指して、そのままクリップボードへ。",
+    "description": "Shown in the Chrome Web Store and on chrome://extensions."
+  },
+  "menuStart": {
+    "message": "範囲を選択してキャプチャ",
+    "description": "The right-click menu entry that starts a capture."
+  },
+
+  "toolFill": { "message": "隠す", "description": "Tool that paints an opaque block." },
+  "toolBox": { "message": "囲う", "description": "Tool that draws a rectangle outline." },
+  "toolArrow": { "message": "矢印", "description": "Tool that draws an arrow." },
+
+  "actUndo": { "message": "取り消す" },
+  "actSave": { "message": "保存" },
+  "actCopy": { "message": "コピー" },
+  "actHelp": { "message": "ヘルプ" },
+
+  "helpTitle": { "message": "編集モード", "description": "Heading of the help panel." },
+  "helpEdge": {
+    "message": "縁をドラッグ",
+    "description": "Left column of the help panel. A gesture, not a key."
+  },
+  "helpEdgeDesc": { "message": "選択範囲を広げる / 狭める" },
+  "helpUndoDesc": { "message": "直前の 1 つを取り消す" },
+  "helpCopyDesc": { "message": "コピーして閉じる" },
+  "helpSaveDesc": { "message": "PNG で保存して閉じる" },
+  "helpCancelDesc": { "message": "中止する" },
+  "helpSelfDesc": { "message": "このヘルプ" },
+
+  "toastCopied": { "message": "コピーしました" },
+  "toastSaved": { "message": "保存しました" },
+  "toastNoImage": { "message": "画像を作れませんでした" },
+  "toastInsecure": {
+    "message": "このページではコピーできません。$KEY$ で保存してください",
+    "description": "Shown on http: pages, where the browser refuses clipboard writes.",
+    "placeholders": { "key": { "content": "$1", "example": "⌘S" } }
+  },
+  "toastDenied": {
+    "message": "コピーできませんでした。$KEY$ で保存してください",
+    "placeholders": { "key": { "content": "$1", "example": "⌘S" } }
+  },
+
+  "errUnsupported": {
+    "message": "このページでは使えません",
+    "description": "Tooltip on the toolbar icon after a failure."
+  },
+  "errFileAccess": {
+    "message": "拡張の詳細画面で「ファイルの URL へのアクセスを許可」を有効にしてください"
+  },
+  "errImage": { "message": "画像を開けませんでした" }
+}

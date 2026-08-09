@@ -1,0 +1,53 @@
+{
+  "appDesc": {
+    "message": "Select an area, hide it, box it, point at it, then straight to the clipboard.",
+    "description": "Shown in the Chrome Web Store and on chrome://extensions."
+  },
+  "menuStart": {
+    "message": "Capture a selected area",
+    "description": "The right-click menu entry that starts a capture."
+  },
+
+  "toolFill": { "message": "Hide", "description": "Tool that paints an opaque block." },
+  "toolBox": { "message": "Box", "description": "Tool that draws a rectangle outline." },
+  "toolArrow": { "message": "Arrow", "description": "Tool that draws an arrow." },
+
+  "actUndo": { "message": "Undo" },
+  "actSave": { "message": "Save" },
+  "actCopy": { "message": "Copy" },
+  "actHelp": { "message": "Help" },
+
+  "helpTitle": { "message": "Editing", "description": "Heading of the help panel." },
+  "helpEdge": {
+    "message": "drag an edge",
+    "description": "Left column of the help panel. A gesture, not a key."
+  },
+  "helpEdgeDesc": { "message": "Grow or shrink the selection" },
+  "helpUndoDesc": { "message": "Undo the last one" },
+  "helpCopyDesc": { "message": "Copy and close" },
+  "helpSaveDesc": { "message": "Save as PNG and close" },
+  "helpCancelDesc": { "message": "Cancel" },
+  "helpSelfDesc": { "message": "This help" },
+
+  "toastCopied": { "message": "Copied" },
+  "toastSaved": { "message": "Saved" },
+  "toastNoImage": { "message": "Could not create the image" },
+  "toastInsecure": {
+    "message": "Copying is blocked on this page. Press $KEY$ to save instead",
+    "description": "Shown on http: pages, where the browser refuses clipboard writes.",
+    "placeholders": { "key": { "content": "$1", "example": "Ctrl+S" } }
+  },
+  "toastDenied": {
+    "message": "Copying failed. Press $KEY$ to save instead",
+    "placeholders": { "key": { "content": "$1", "example": "Ctrl+S" } }
+  },
+
+  "errUnsupported": {
+    "message": "This page cannot be captured",
+    "description": "Tooltip on the toolbar icon after a failure."
+  },
+  "errFileAccess": {
+    "message": "Turn on \"Allow access to file URLs\" on the extension's details page"
+  },
+  "errImage": { "message": "The image could not be opened" }
+}

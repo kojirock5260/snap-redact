@@ -1,0 +1,20 @@
+{
+  "name": "snap-redact",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b && vite build && vite build --config vite.content.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.7",
+    "@types/chrome": "^0.0.280",
+    "typescript": "^5.6.3",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}
