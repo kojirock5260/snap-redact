@@ -7,6 +7,10 @@
     "message": "Capture a selected area",
     "description": "The right-click menu entry that starts a capture."
   },
+  "cmdStart": {
+    "message": "Capture a selected area, keeping hover states on screen",
+    "description": "Shown on chrome://extensions/shortcuts, next to the key assignment."
+  },
 
   "toolFill": { "message": "Hide", "description": "Tool that paints an opaque block." },
   "toolBox": { "message": "Box", "description": "Tool that draws a rectangle outline." },

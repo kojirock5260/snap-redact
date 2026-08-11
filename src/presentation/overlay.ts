@@ -17,15 +17,6 @@ const CLOSE_DELAY_MS = 420;
 /** トーストを出しておく時間（ミリ秒）。失敗の案内を読み切れる程度に取る。 */
 const TOAST_MS = 3000;
 
-/**
- * ヘルプを自動で開いたかどうか。
- *
- * モジュールの寿命はページの寿命と同じ。同じページで何度起動しても最初の 1 回しか
- * 開かないが、ページを移れば忘れる。chrome.storage に覚えさせれば完全に 1 回で
- * 済むが、そのために `storage` 権限を足すほどの話ではないと判断した。
- */
-let helpSeen = false;
-
 type Timer = ReturnType<typeof setTimeout>;
 
 /**
@@ -334,10 +325,6 @@ function up(s: Session): void {
       s.region = r;
       s.phase = "annotate";
       s.toolbar.el.classList.add("on");
-      if (!helpSeen) {
-        helpSeen = true;
-        setHelp(s, true);
-      }
     }
   } else if (drag.tool && drag.color) {
     const shape: Shape = { ...drag, tool: drag.tool, color: drag.color };

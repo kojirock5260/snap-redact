@@ -7,6 +7,10 @@
     "message": "範囲を選択してキャプチャ",
     "description": "The right-click menu entry that starts a capture."
   },
+  "cmdStart": {
+    "message": "範囲を選択してキャプチャ（ホバー表示を消さずに起動）",
+    "description": "Shown on chrome://extensions/shortcuts, next to the key assignment."
+  },
 
   "toolFill": { "message": "隠す", "description": "Tool that paints an opaque block." },
   "toolBox": { "message": "囲う", "description": "Tool that draws a rectangle outline." },

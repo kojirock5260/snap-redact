@@ -39,9 +39,16 @@ To run your build in Chrome:
 
 ## Usage
 
-Click the toolbar icon, or right-click a page and choose the menu item.
-No keyboard shortcut is assigned by default, because the obvious combinations
-collide with other apps. Assign your own at `chrome://extensions/shortcuts`.
+Click the toolbar icon, right-click a page and choose the menu item, or press
+`Cmd+Shift+E` (`Ctrl+Shift+E` on Windows and Linux). Change the key at
+`chrome://extensions/shortcuts`.
+
+**Use the shortcut to capture things that only appear while hovering.** Moving
+the pointer to the toolbar icon or to the right-click menu drops the hover and
+the element disappears. A key press leaves the pointer where it is, so the
+element stays on screen and lands in the capture. What the browser itself draws
+— `title` tooltips, `<select>` dropdowns — is outside the page and is never
+captured.
 
 | Action | Key |
 |---|---|
@@ -62,7 +69,7 @@ src/
   domain/        pure rules. no DOM, no chrome.*, fully unit tested
   application/   side effects through browser APIs (capture, clipboard, download, notify)
   presentation/  the overlay: shadow DOM, canvas, events
-  background.ts  service worker. two entry points, nothing else
+  background.ts  service worker. three entry points, nothing else
   content.ts     injected script. guards against double injection
 ```
 

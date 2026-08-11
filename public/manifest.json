@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Snap Redact",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "minimum_chrome_version": "114",
   "default_locale": "en",
   "description": "__MSG_appDesc__",
@@ -15,6 +15,15 @@
   },
   "action": {
     "default_title": "Snap Redact"
+  },
+  "commands": {
+    "start-capture": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      },
+      "description": "__MSG_cmdStart__"
+    }
   },
   "icons": {
     "16": "icons/icon16.png",
