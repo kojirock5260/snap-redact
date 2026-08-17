@@ -24,6 +24,8 @@ requested, so the extension keeps nothing. See the
 
 Chrome Web Store: (not published)
 
+See the [changelog](CHANGELOG.md) for what changed in each version.
+
 ## Development
 
 ```bash

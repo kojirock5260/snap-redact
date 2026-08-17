@@ -22,6 +22,8 @@
 
 Chrome Web Store: （未公開）
 
+バージョンごとの変更は [変更履歴](CHANGELOG.ja.md) を参照。
+
 ## 開発
 
 ```bash

@@ -6,3 +6,4 @@ dist/
 tsconfig.tsbuildinfo
 *.crx
 *.pem
+*.zip
