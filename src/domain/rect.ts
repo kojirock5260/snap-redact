@@ -58,21 +58,58 @@ export function contains(r: Rect, p: Point): boolean {
 }
 
 /**
- * 点を枠の中に押し戻す。
+ * 端に吸い付く距離（CSS ピクセル）。
  *
- * ポインタキャプチャ中の座標は窓の外にも出る。そのまま選択範囲にすると、撮った絵の
- * 無いところまで範囲に入り、書き出した PNG に空白の帯が付く。入口で潰しておく。
+ * オーバーレイはページのビューポートの中にしか置けない。ポインタを窓の外へ逃がして
+ * から引き始めることができないので、端ちょうどを取るには最外周の 1 ピクセルを狙う
+ * ことになる。DevTools のデバイスモードのように窓が狭いと、その 1 ピクセルは隣の
+ * UI と接していて、狙いを外した瞬間に触るのは拡張ではなく DevTools のほうになる。
+ *
+ * 端に寄せたら端として扱えば、その精度を要求せずに済む。窓の外から引けないことの
+ * 埋め合わせなので、値は「狙わなくても入る」幅であれば足りる。
+ */
+export const EDGE_SNAP = 12;
+
+/**
+ * 点を枠の中に押し戻し、端の近くなら端そのものへ寄せる。
+ *
+ * 押し戻すほうは必須。ポインタキャプチャ中の座標は窓の外にも出る。そのまま選択範囲に
+ * すると、撮った絵の無いところまで範囲に入り、書き出した PNG に空白の帯が付く。
  *
  * @param p 押し戻す点
  * @param w 枠の幅
  * @param h 枠の高さ
- * @returns 0 以上 `w` / `h` 以下に収めた点
+ * @param snap 端に寄せる距離。0 を渡せば押し戻すだけになる
+ * @returns 0 以上 `w` / `h` 以下に収め、端の近くなら端に寄せた点
  */
-export function clampPoint(p: Point, w: number, h: number): Point {
+export function snapPoint(p: Point, w: number, h: number, snap: number): Point {
   return {
-    x: Math.min(Math.max(p.x, 0), w),
-    y: Math.min(Math.max(p.y, 0), h),
+    x: snapAxis(p.x, w, snap),
+    y: snapAxis(p.y, h, snap),
   };
+}
+
+/**
+ * 1 軸ぶんの押し戻しと寄せ。
+ *
+ * 寄せる幅を枠の 1/4 で頭打ちにしている。上限が無いと、枠が吸着幅の 2 倍を切った
+ * ところで全域がどちらかの端に吸われ、真ん中を指せなくなる。ハンドルの当たり判定を
+ * 辺の 1/3 で頭打ちにしているのと同じ理由。
+ *
+ * @param v 押し戻す座標
+ * @param max 枠の大きさ
+ * @param snap 端に寄せる距離
+ * @returns 0 以上 `max` 以下の座標
+ */
+function snapAxis(v: number, max: number, snap: number): number {
+  const t = Math.min(snap, max / 4);
+  if (v <= t) {
+    return 0;
+  }
+  if (v >= max - t) {
+    return max;
+  }
+  return v;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampPoint, contains, diagonal, toRect } from "../../src/domain/rect";
+import { contains, diagonal, EDGE_SNAP, snapPoint, toRect } from "../../src/domain/rect";
 
 describe("toRect", () => {
   it("keeps a drag made toward the bottom right", () => {
@@ -33,21 +33,55 @@ describe("contains", () => {
   });
 });
 
-describe("clampPoint", () => {
+describe("snapPoint / clamping", () => {
   it("leaves a point inside alone", () => {
-    expect(clampPoint({ x: 400, y: 300 }, 1280, 800)).toEqual({ x: 400, y: 300 });
+    expect(snapPoint({ x: 400, y: 300 }, 1280, 800, 0)).toEqual({ x: 400, y: 300 });
   });
 
   it("pulls back a point dragged past the right and bottom", () => {
-    expect(clampPoint({ x: 9999, y: 9999 }, 1280, 800)).toEqual({ x: 1280, y: 800 });
+    expect(snapPoint({ x: 9999, y: 9999 }, 1280, 800, 0)).toEqual({ x: 1280, y: 800 });
   });
 
   it("pulls back a negative point, which pointer capture can produce", () => {
-    expect(clampPoint({ x: -50, y: -1 }, 1280, 800)).toEqual({ x: 0, y: 0 });
+    expect(snapPoint({ x: -50, y: -1 }, 1280, 800, 0)).toEqual({ x: 0, y: 0 });
   });
 
   it("keeps the edges themselves, so the full width can be selected", () => {
-    expect(clampPoint({ x: 0, y: 800 }, 1280, 800)).toEqual({ x: 0, y: 800 });
+    expect(snapPoint({ x: 0, y: 800 }, 1280, 800, 0)).toEqual({ x: 0, y: 800 });
+  });
+});
+
+describe("snapPoint / edge snapping", () => {
+  // DevTools のデバイスモードでいちばん困る大きさ。iPhone 16 Pro Max 相当。
+  const w = 440;
+  const h = 956;
+
+  it("pulls a near-miss at the top left onto the corner", () => {
+    expect(snapPoint({ x: 5, y: 3 }, w, h, EDGE_SNAP)).toEqual({ x: 0, y: 0 });
+  });
+
+  it("pulls a near-miss at the bottom right onto the corner", () => {
+    expect(snapPoint({ x: w - 5, y: h - 3 }, w, h, EDGE_SNAP)).toEqual({ x: w, y: h });
+  });
+
+  it("snaps one axis without dragging the other along", () => {
+    expect(snapPoint({ x: 4, y: 400 }, w, h, EDGE_SNAP)).toEqual({ x: 0, y: 400 });
+  });
+
+  it("leaves a point just outside the snap distance where it is", () => {
+    expect(snapPoint({ x: EDGE_SNAP + 1, y: 400 }, w, h, EDGE_SNAP)).toEqual({
+      x: EDGE_SNAP + 1,
+      y: 400,
+    });
+  });
+
+  it("takes the edge exactly at the snap distance, so the boundary is inclusive", () => {
+    expect(snapPoint({ x: EDGE_SNAP, y: 400 }, w, h, EDGE_SNAP)).toEqual({ x: 0, y: 400 });
+  });
+
+  it("keeps the middle reachable in a frame narrower than twice the snap distance", () => {
+    // 上限が無いと 20px 幅では全域が端に吸われ、真ん中を指せなくなる。
+    expect(snapPoint({ x: 10, y: 10 }, 20, 20, EDGE_SNAP)).toEqual({ x: 10, y: 10 });
   });
 });
 

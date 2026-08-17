@@ -19,6 +19,12 @@
   position: fixed;
   inset: 0;
   cursor: crosshair;
+  /* ブラウザにジェスチャを取らせない。DevTools のデバイスモードはタッチ入力を
+     エミュレートするので、これが無いとドラッグがスクロールと解釈され、途中で
+     pointercancel が飛んで pointermove が止まる。選択範囲がその場で固まるのは
+     これが原因。pointerdown の preventDefault では防げない（仕様上、パンを
+     抑止できるのは touch-action だけ）。 */
+  touch-action: none;
   font-family:
     -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
 }
@@ -49,14 +55,37 @@ canvas {
   opacity: 1;
 }
 
-.bar {
+/* ツールバーと、その上に出るもの（ヘルプ・トースト）をまとめて下端に寄せる箱。
+   ヘルプの位置を固定値ではなくツールバーの高さから決めるために要る。窓が狭くて
+   ツールバーが 2 段になっても、その上に押し出されるので重ならない。
+
+   自身は素通しにしてある。範囲を引く前はツールバーが出ていないので、この箱が
+   イベントを受けると、画面下の中央だけドラッグを始められない帯になってしまう。
+
+   窓幅いっぱいに広げ、中身は justify-content で中央に寄せる。left:50% と
+   translateX(-50%) で中央に置くと、折り返しの判定に使える幅が窓の半分になってしまう。
+   transform は幅が決まったあとに掛かるので、判定には間に合わない。 */
+.dock {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 24px;
-  transform: translateX(-50%) translateY(6px);
   display: flex;
+  justify-content: center;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+.bar {
+  display: flex;
+  max-width: 100%;
+  /* 窓に入り切らないぶんは積む。1 行に押し込むと、ボタンの中で文字が折れたうえ、
+     端のボタンが窓の外へ出て押せなくなる。 */
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: 2px;
+  /* 行間 4px、まとまりの間 12px。縦罫の代わりに、この間隔が区切りを兼ねる。 */
+  gap: 4px 12px;
   padding: 5px;
   border-radius: 10px;
   background: #14171c;
@@ -64,6 +93,7 @@ canvas {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
   opacity: 0;
   pointer-events: none;
+  transform: translateY(6px);
   transition:
     opacity 0.1s ease,
     transform 0.1s ease;
@@ -72,13 +102,64 @@ canvas {
 .bar.on {
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
+}
+
+/* 折り返しても割れないひとまとまり。行が変わるのは箱と箱の間だけになる。 */
+.grp {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 範囲を引く前に出す案内。ツールバーと同じ場所に置いてあるので、範囲が決まると
+   そのまま入れ替わる。撮った直後は画面が暗くなるだけで、何をすればいいのかも、
+   全体を選ぶ手があることも分からない。 */
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: max-content;
+  margin: 0 auto;
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #14171c;
+  border: 1px solid #2b3038;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  color: #a8b0bb;
+  font: 500 12px / 1 inherit;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+}
+
+.hint.on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* キーと説明の間だけは、まとまりの中でも少し空ける。詰めると kbd の枠と文字が
+   くっついて読みにくい。 */
+.hint .grp {
+  gap: 6px;
 }
 
 .btn {
   display: flex;
   align-items: center;
   gap: 6px;
+  /* ラベルを折らない。折れると「囲う」が 2 行になり、行の高さが揃わなくなる。 */
+  white-space: nowrap;
   padding: 6px 9px;
   border: 0;
   border-radius: 6px;
@@ -126,13 +207,6 @@ kbd {
   border-color: #3a424d;
 }
 
-.sep {
-  width: 1px;
-  height: 20px;
-  background: #2b3038;
-  margin: 0 5px;
-}
-
 .sw {
   width: 18px;
   height: 18px;
@@ -152,12 +226,20 @@ kbd {
   outline-offset: 2px;
 }
 
+/* ツールバーのすぐ上。`bottom: 100%` が dock の上端にあたるので、ツールバーが
+   2 段になれば一緒に押し上がる。固定値で置くと 2 段目に潜り込む。 */
 .help {
-  position: fixed;
-  left: 50%;
-  bottom: 78px;
-  transform: translateX(-50%) translateY(4px);
-  min-width: 300px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  /* 中央寄せは margin に任せる。left:50% だと、中身の幅を決めるときに使える幅が
+     窓の半分になり、収まるはずの行まで折り返す。ツールバーと同じ理由。 */
+  width: max-content;
+  margin: 0 auto;
+  min-width: min(300px, calc(100% - 24px));
+  max-width: calc(100% - 24px);
+  transform: translateY(4px);
   padding: 12px 14px;
   border-radius: 10px;
   background: #14171c;
@@ -172,7 +254,7 @@ kbd {
 
 .help.on {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 
 .help h1 {
@@ -209,10 +291,13 @@ kbd {
 }
 
 .toast {
-  position: fixed;
-  left: 50%;
-  bottom: 78px;
-  transform: translateX(-50%);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  margin: 0 auto;
+  max-width: calc(100% - 24px);
   padding: 7px 12px;
   border-radius: 7px;
   background: #e6e9ee;

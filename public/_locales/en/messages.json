@@ -21,6 +21,15 @@
   "actCopy": { "message": "Copy" },
   "actHelp": { "message": "Help" },
 
+  "hintDrag": {
+    "message": "Drag to select an area",
+    "description": "Shown before a region is chosen, where the screen is just dimmed."
+  },
+  "hintAll": {
+    "message": "Select the whole capture",
+    "description": "Next to Cmd+A in the same hint. Selects the whole captured viewport."
+  },
+
   "helpTitle": { "message": "Editing", "description": "Heading of the help panel." },
   "helpEdge": {
     "message": "drag an edge",

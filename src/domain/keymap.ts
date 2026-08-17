@@ -10,6 +10,8 @@ export type Action =
   | { type: "undo" }
   /** 引いている最中のものだけ取り消す。オーバーレイは閉じない。 */
   | { type: "cancelDrag" }
+  /** 撮った絵の全体を選択範囲にする。 */
+  | { type: "selectAll" }
   | { type: "selectTool"; tool: ToolId }
   /** 何もしないが、ページにも渡さない。 */
   | { type: "swallow" };
@@ -79,7 +81,21 @@ export function resolveKey(e: KeyInput, ctx: KeyContext): Action | null {
     return { type: "swallow" };
   }
 
-  // 範囲を決める前は、ドラッグ以外に選べるものが無い。
+  // 全体選択は範囲を引く前だけ。狭い窓では端ちょうどから引くのが難しいうえ、
+  // オーバーレイはビューポートの外に出られないので、ポインタを窓の外へ逃がしてから
+  // 引き始めることもできない。ここが唯一の逃げ道になる。
+  //
+  // 決めたあとは効かせない。描いている最中に押し間違えると、範囲が全体に戻って
+  // 選び直しになる。⌘Z は図形しか戻さないので、取り返す手がない。
+  //
+  // 効かない段階でもページには渡さない。裏のページで全選択が起きると、画面上は
+  // 何も変わらないのに、閉じた瞬間だけ文字が反転して見える。
+  if (mod && e.key.toLowerCase() === "a") {
+    return ctx.phase === "select" ? { type: "selectAll" } : { type: "swallow" };
+  }
+
+  // 範囲を決める前は、ドラッグと全体選択のほかに選べるものが無い。案内は画面に出して
+  // あるので、ヘルプを開かせる必要もない。
   if (ctx.phase !== "annotate") {
     return null;
   }

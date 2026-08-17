@@ -58,15 +58,24 @@ function text(tag: string, content: string): HTMLElement {
 }
 
 /**
- * ボタンの群を分ける縦罫を作る。
+ * ボタンをひとまとまりにする箱を作る。
  *
- * @returns 罫線の要素
+ * 窓が狭いとツールバーは折り返す。まとまりを箱にしておかないと、色の並びの途中や
+ * 道具の途中で行が変わり、どこまでが一組なのか読めなくなる。箱にしておけば、
+ * 行が変わるのは必ず箱と箱の間になる。
+ *
+ * 区切りを縦罫ではなく箱の間隔で示しているのも折り返しのため。縦罫は行末や行頭に
+ * 取り残されると、何も区切っていない線として残ってしまう。
+ *
+ * @param children 中に並べる要素
+ * @returns 組み立てた箱
  */
-const separator = (): HTMLElement => {
-  const d = document.createElement("div");
-  d.className = "sep";
-  return d;
-};
+function group(...children: Element[]): HTMLElement {
+  const g = document.createElement("div");
+  g.className = "grp";
+  g.append(...children);
+  return g;
+}
 
 /**
  * 下部のツールバーを組み立てる。並びは「道具 → 色 → 出力 → ヘルプ」で固定。
@@ -78,15 +87,13 @@ export function createToolbar(h: ToolbarHandlers): Toolbar {
   const el = document.createElement("div");
   el.className = "bar";
 
-  for (const t of TOOLS) {
+  const tools = TOOLS.map((t) => {
     const b = button(message(t.labelKey), t.key, () => h.onTool(t.id));
     b.dataset.tool = t.id;
-    el.append(b);
-  }
+    return b;
+  });
 
-  el.append(separator());
-
-  for (const c of COLORS) {
+  const swatches = COLORS.map((c) => {
     const b = document.createElement("button");
     b.className = "sw";
     b.type = "button";
@@ -94,16 +101,18 @@ export function createToolbar(h: ToolbarHandlers): Toolbar {
     b.style.background = c;
     b.title = c;
     b.addEventListener("click", () => h.onColor(c));
-    el.append(b);
-  }
+    return b;
+  });
 
   el.append(
-    separator(),
-    button(message("actUndo"), mod("Z"), h.onUndo),
-    button(message("actSave"), mod("S"), h.onSave),
-    button(message("actCopy"), mod("C"), h.onCopy),
-    separator(),
-    button(message("actHelp"), "?", h.onHelp),
+    group(...tools),
+    group(...swatches),
+    group(
+      button(message("actUndo"), mod("Z"), h.onUndo),
+      button(message("actSave"), mod("S"), h.onSave),
+      button(message("actCopy"), mod("C"), h.onCopy),
+    ),
+    group(button(message("actHelp"), "?", h.onHelp)),
   );
 
   return {
@@ -146,6 +155,9 @@ function helpRows(): { keys: string[]; desc: string; plain?: boolean }[] {
  * ツールバーのボタンにもキーは書いてあるので、ここに載せるのは
  * ボタンを見ても分からないこと（縁を掴めること、Esc で抜けられること）が中心。
  *
+ * 全体選択（⌘A）は載せていない。範囲を決めたあとに要るものではなく、決める前の
+ * 案内で伝えているため（{@link createHint} を参照）。
+ *
  * 「中をドラッグして描く」は載せていない。道具が並んでいる状態で範囲の中をなぞるのは
  * 自然に試せるうえ、1 行使って書くほどの発見ではないため。
  *
@@ -169,5 +181,45 @@ export function createHelp(): HTMLElement {
   }
 
   el.append(text("h1", message("helpTitle")), dl);
+  return el;
+}
+
+/**
+ * 範囲を引く前に出す案内を組み立てる。
+ *
+ * 撮った直後の画面は暗くなるだけで、何を求められているのかが分からない。ドラッグ
+ * すれば選べることも、窓が狭いときの逃げ道（全体選択）も、知らなければ辿り着けない。
+ *
+ * 載せるのはその 2 つだけ。ここはまだ何も選べていない段階なので、いま踏める道が
+ * 全部でいくつあるのかが分かることに意味がある。3 つ目を足すと一覧に見えてしまい、
+ * 読む対象になってしまう。ヘルプは範囲を決めたあとツールバーから辿れる。
+ *
+ * ツールバーと同じ場所に出す。範囲が決まるとそのまま入れ替わるので、目線を動かさずに
+ * 次の操作へ移れる。
+ *
+ * @returns 案内の要素。`on` クラスの付け外しで見せ隠しする
+ */
+export function createHint(): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "hint";
+
+  /**
+   * キーと説明を 1 組にする。キーが無い行はジェスチャの説明。
+   *
+   * @param key 併記するキー。ジェスチャなら `null`
+   * @param label 説明の文字
+   * @returns 折り返しても割れないひとまとまり
+   */
+  const item = (key: string | null, label: string): HTMLElement => {
+    const g = document.createElement("div");
+    g.className = "grp";
+    if (key !== null) {
+      g.append(text("kbd", key));
+    }
+    g.append(text("span", label));
+    return g;
+  };
+
+  el.append(item(null, message("hintDrag")), item(mod("A"), message("hintAll")));
   return el;
 }

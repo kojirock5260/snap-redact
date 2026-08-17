@@ -117,4 +117,29 @@ describe("resolveKey / help", () => {
     expect(resolveKey(key("?"), annotate)).toEqual({ type: "toggleHelp" });
     expect(resolveKey(key("h"), annotate)).toEqual({ type: "toggleHelp" });
   });
+
+  it("stays shut before a region is chosen, where the on-screen hint says it all", () => {
+    expect(resolveKey(key("?"), selecting)).toBeNull();
+    expect(resolveKey(key("h"), selecting)).toBeNull();
+  });
+});
+
+describe("resolveKey / select all", () => {
+  it("works before a region is chosen, where the edges are hard to aim at", () => {
+    expect(resolveKey(key("a", { meta: true }), selecting)).toEqual({ type: "selectAll" });
+  });
+
+  it("stops working once a region is chosen, so a stray press cannot reset it", () => {
+    expect(resolveKey(key("a", { meta: true }), annotate)).toEqual({ type: "swallow" });
+  });
+
+  it("accepts the control key and a capitalized key", () => {
+    expect(resolveKey(key("a", { ctrl: true }), selecting)).toEqual({ type: "selectAll" });
+    expect(resolveKey(key("A", { meta: true }), selecting)).toEqual({ type: "selectAll" });
+  });
+
+  it("does nothing for a bare a, which would swallow typing on the page behind", () => {
+    expect(resolveKey(key("a"), selecting)).toBeNull();
+    expect(resolveKey(key("a"), annotate)).toBeNull();
+  });
 });

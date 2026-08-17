@@ -5,11 +5,19 @@ import { snapFileName } from "../domain/filename";
 import { type Handle, handleAt, handleCursor, resizeRect } from "../domain/handle";
 import type { Action } from "../domain/keymap";
 import { resolveKey } from "../domain/keymap";
-import { clampPoint, contains, type Drag, type Point, type Rect, toRect } from "../domain/rect";
+import {
+  contains,
+  type Drag,
+  EDGE_SNAP,
+  type Point,
+  type Rect,
+  snapPoint,
+  toRect,
+} from "../domain/rect";
 import { COLORS, isDrawable, MIN_SELECTION, type Shape, type ToolId } from "../domain/shape";
 import css from "./overlay.css?raw";
 import { drawScene, flatten } from "./scene";
-import { createHelp, createToolbar, mod, type Toolbar } from "./toolbar";
+import { createHelp, createHint, createToolbar, mod, type Toolbar } from "./toolbar";
 
 /** コピーや保存のあと、結果を読ませてから閉じるまでの間（ミリ秒）。 */
 const CLOSE_DELAY_MS = 420;
@@ -60,6 +68,8 @@ type Session = {
   sizeTag: HTMLElement;
   toast: HTMLElement;
   help: HTMLElement;
+  /** 範囲を引く前だけ出す案内。 */
+  hint: HTMLElement;
   toolbar: Toolbar;
 
   /**
@@ -132,11 +142,13 @@ function open(image: HTMLImageElement): Session {
   const toast = document.createElement("div");
   toast.className = "toast";
   const help = createHelp();
+  const hint = createHint();
 
   // 下で作る s を掴むだけの包み。剥がすときに同じ参照が要るので変数に取る。
   const onDown = (e: PointerEvent): void => down(s, e);
   const onMove = (e: PointerEvent): void => move(s, e);
   const onUp = (): void => up(s);
+  const onCancel = (): void => cancelDrag(s);
   const onKey = (e: KeyboardEvent): void => key(s, e);
   const onResize = (): void => resize(s);
 
@@ -159,6 +171,7 @@ function open(image: HTMLImageElement): Session {
     sizeTag,
     toast,
     help,
+    hint,
     toolbar: createToolbar({
       onTool: (tool) => setTool(s, tool),
       onColor: (color) => setColor(s, color),
@@ -179,13 +192,24 @@ function open(image: HTMLImageElement): Session {
     },
   };
 
-  stage.append(canvas, sizeTag, help, s.toolbar.el, toast);
+  // ヘルプとトーストはツールバーの真上に出る。位置を固定値ではなくツールバーの
+  // 高さから決めたいので、3 つを 1 つの箱に入れて下端に寄せる。窓が狭くて
+  // ツールバーが 2 段になっても、上の 2 つが一緒に押し上がって重ならない。
+  const dock = document.createElement("div");
+  dock.className = "dock";
+  dock.append(s.toolbar.el, hint, help, toast);
+
+  stage.append(canvas, sizeTag, dock);
   shadow.append(style, stage);
   document.documentElement.append(host);
 
   stage.addEventListener("pointerdown", onDown);
   stage.addEventListener("pointermove", onMove);
   stage.addEventListener("pointerup", onUp);
+  // ブラウザにジェスチャを横取りされたとき。touch-action で防いでいるので普段は
+  // 来ないが、来た場合は pointerup が続かない。引きかけを捨てておかないと、指を
+  // 離したはずなのに次のポインタの動きで範囲が付いてくる。
+  stage.addEventListener("pointercancel", onCancel);
   // ページが動くと、固定された絵とのずれが目に見えてしまう。
   stage.addEventListener("wheel", (e) => e.preventDefault(), { passive: false });
   stage.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -219,12 +243,15 @@ function sizeCanvas(s: Session): void {
  * 撮った絵の外へは出さない。窓の外まで引かれた選択範囲をそのまま書き出すと、
  * 絵の無いところが PNG に空白として残る。
  *
+ * 端の近くは端に寄せる。引き始めだけは窓の外に置けないので、寄せておかないと
+ * 最外周の 1 ピクセルを狙わされる（{@link EDGE_SNAP} を参照）。
+ *
  * @param s 対象のセッション
  * @param e ポインタイベント
  * @returns 撮った絵の中に収めたビューポート基準の座標
  */
 const point = (s: Session, e: PointerEvent): Point =>
-  clampPoint({ x: e.clientX, y: e.clientY }, s.captured.w, s.captured.h);
+  snapPoint({ x: e.clientX, y: e.clientY }, s.captured.w, s.captured.h, EDGE_SNAP);
 
 /**
  * 押されたところからドラッグを始める。
@@ -322,9 +349,7 @@ function up(s: Session): void {
     hideSize(s);
     const r = toRect(drag);
     if (r.w >= MIN_SELECTION && r.h >= MIN_SELECTION) {
-      s.region = r;
-      s.phase = "annotate";
-      s.toolbar.el.classList.add("on");
+      commit(s, r);
     }
   } else if (drag.tool && drag.color) {
     const shape: Shape = { ...drag, tool: drag.tool, color: drag.color };
@@ -334,6 +359,22 @@ function up(s: Session): void {
   }
 
   render(s);
+}
+
+/**
+ * 選択範囲を決めて、注釈の段階へ進める。
+ *
+ * ドラッグで決めるときと {@link selectAll} で決めるときの両方が通る。ツールバーを
+ * 出すのはここだけにしてある。範囲が決まる前に道具を並べても、押して何も起きない
+ * ボタンを見せるだけになる。
+ *
+ * @param s 対象のセッション
+ * @param r 決まった選択範囲
+ */
+function commit(s: Session, r: Rect): void {
+  s.region = r;
+  s.phase = "annotate";
+  s.toolbar.el.classList.add("on");
 }
 
 /**
@@ -386,6 +427,9 @@ function run(s: Session, action: Action): void {
     case "undo":
       undo(s);
       return;
+    case "selectAll":
+      selectAll(s);
+      return;
     case "selectTool":
       setTool(s, action.tool);
       return;
@@ -409,6 +453,25 @@ function cancelDrag(s: Session): void {
     s.resizing = null;
   }
   s.drag = null;
+  hideSize(s);
+  render(s);
+}
+
+/**
+ * 撮った絵の全体を選択範囲にする。
+ *
+ * 端ちょうどから引く手間をまるごと省くための逃げ道。オーバーレイはビューポートの
+ * 外に出られないので、窓が狭いほどドラッグで全体を取るのが難しくなる。
+ *
+ * 呼ばれるのは範囲を決める前だけ（{@link resolveKey} を参照）。決めたあとに効くと、
+ * 描いている最中の押し間違いで選び直しになるため。
+ *
+ * @param s 対象のセッション
+ */
+function selectAll(s: Session): void {
+  // 引いている最中に押されることがある。残しておくと、指を離した時点で上書きされる。
+  s.drag = null;
+  commit(s, { x: 0, y: 0, w: s.captured.w, h: s.captured.h });
   hideSize(s);
   render(s);
 }
@@ -580,6 +643,11 @@ function render(s: Session): void {
 
   // 引いている最中は出さない。動いている点の周りに四角が湧くと目移りする。
   const handles = s.phase === "annotate" && !s.drag && !s.resizing;
+
+  // 案内は範囲が決まるまで出しっぱなし。引いている最中に引っ込めると、狙いを定めて
+  // いる視界の隅で何かが動くことになる。⌘A は引き始めたあとでも選び直せるので、
+  // 残っているほうが役に立つ。
+  s.hint.classList.toggle("on", s.phase === "select");
 
   drawScene(s.ctx, { image: s.image, captured: s.captured, region, shapes, handles }, s.dpr, {
     w: window.innerWidth,

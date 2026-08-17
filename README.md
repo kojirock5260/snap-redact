@@ -53,6 +53,7 @@ captured.
 | Action | Key |
 |---|---|
 | Select an area | drag |
+| Select the whole capture | `Cmd+A` |
 | Adjust the selection | drag a handle on its edge |
 | Draw a shape | drag inside the selection |
 | Hide / Box / Arrow | `1` / `2` / `3` |
@@ -61,6 +62,11 @@ captured.
 | Save as PNG | `Cmd+S` |
 | Help | `?` |
 | Cancel | `Esc` |
+
+The overlay lives inside the page viewport, so unlike an OS screenshot you cannot
+start a drag outside the window. Points within 12px of an edge snap to it, so the
+outermost pixels need no aiming. When the viewport is narrow — DevTools device
+mode, say — `Cmd+A` and then a handle drag beats aiming for the corners.
 
 ## Layout
 
