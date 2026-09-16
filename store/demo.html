@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acme Console · Customer</title>
+<!--
+  Snap Redact のデモページ。
+
+  ストアに載せるスクリーンショットの題材と、使い方を試す練習台を兼ねる。
+  隠したいもの（メール、電話、カード番号、API キー、アバター）と、囲いたい・指したいもの
+  （失敗した行、ボタン）を 1 画面に集めてある。1280×800 でちょうど収まるように組んである。
+
+  外部リソースは読み込まない。拡張と同じく、開いても通信は起きない。
+
+  URL パラメータ:
+    ?lang=ja   案内を日本語にする
+    ?clean     右下の案内を消す（ストア用の撮影向け）
+-->
+<style>
+  :root {
+    --bg: #f1f5f9; --card: #fff; --line: #d9e0e8; --ink: #0f172a; --muted: #64748b;
+    --brand: #1e293b; --accent: #2563eb; --ok: #16a34a; --warn: #f59e0b; --bad: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
+  }
+  .top {
+    height: 52px; background: var(--brand); color: #e2e8f0;
+    display: flex; align-items: center; gap: 28px; padding: 0 24px;
+  }
+  .brand { font-weight: 700; font-size: 16px; color: #fff; letter-spacing: .01em; }
+  .top nav { display: flex; gap: 18px; color: #94a3b8; }
+  .top nav .on { color: #fff; }
+  .me { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; color: #fff; font-weight: 700;
+  }
+  .me .avatar { width: 28px; height: 28px; background: #7c3aed; font-size: 11px; }
+
+  main { padding: 12px 24px 8px; }
+  .head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  h1 { font-size: 20px; font-weight: 700; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  }
+  .badge.plan { background: #dbeafe; color: #1d4ed8; }
+  .badge.ok { background: #dcfce7; color: #15803d; }
+  .badge.bad { background: #fee2e2; color: #b91c1c; }
+  .badge.warn { background: #fef3c7; color: #b45309; }
+  .actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn {
+    padding: 7px 12px; border-radius: 7px; border: 1px solid var(--line); background: #fff;
+    font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.danger { color: var(--bad); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+  .profile { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: start; }
+  .profile .avatar { width: 64px; height: 64px; background: var(--warn); font-size: 22px; }
+  .kv { display: grid; grid-template-columns: 88px 1fr; row-gap: 6px; column-gap: 12px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { font-variant-numeric: tabular-nums; }
+  .kv a { color: var(--accent); text-decoration: none; }
+  .name { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+
+  .cardno { font: 600 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; }
+  .billing .row { display: flex; align-items: center; gap: 14px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .billing .row:first-of-type { border-top: 0; padding-top: 0; }
+  .billing .row .r { margin-left: auto; color: var(--muted); }
+  .brandmark {
+    width: 40px; height: 26px; border-radius: 4px; background: linear-gradient(135deg, #eb001b 50%, #f79e1b 50%);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+  code { font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; background: #f8fafc; border: 1px solid var(--line); padding: 2px 6px; border-radius: 4px; }
+  td .btn { padding: 4px 9px; font-size: 12px; }
+
+  .log { list-style: none; }
+  .log li { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .log li:first-child { border-top: 0; padding-top: 0; }
+  .log time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .log .bad { color: var(--bad); font-weight: 600; }
+
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 48px; padding-top: 4px; }
+  .bars .bar { flex: 1; background: #bfdbfe; border-radius: 4px 4px 0 0; position: relative; }
+  .bars .bar.hi { background: var(--accent); }
+  .bars .bar span { position: absolute; left: 0; right: 0; bottom: -18px; text-align: center; font-size: 11px; color: var(--muted); }
+  .stats { display: flex; gap: 24px; margin-top: 22px; }
+  .stats div { font-size: 12px; color: var(--muted); }
+  .stats strong { display: block; font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .notes p { padding: 8px 0; border-top: 1px solid var(--line); }
+  .notes p:first-of-type { border-top: 0; padding-top: 0; }
+  .notes .who { color: var(--muted); font-size: 12px; margin-right: 8px; }
+
+  .guide {
+    position: fixed; right: 16px; bottom: 16px; z-index: 5;
+    background: #14171c; color: #a8b0bb; border: 1px solid #2b3038; border-radius: 10px;
+    padding: 10px 12px; font-size: 12px; display: flex; gap: 12px; align-items: center;
+    box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  }
+  .guide strong { color: #e6e9ee; }
+  .guide kbd {
+    font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: #10141a; border: 1px solid #2b3038; color: #c3cad4; border-radius: 3px; padding: 2px 4px;
+  }
+  .guide.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">Acme Console</div>
+  <nav>
+    <span class="on">Customers</span><span>Billing</span><span>Logs</span><span>Settings</span>
+  </nav>
+  <div class="me">
+    <span class="avatar" id="me-avatar">MS</span>
+    <span id="me-email">m.sato@acme.example</span>
+  </div>
+</header>
+
+<main>
+  <div class="head">
+    <h1 data-ja="顧客: 山田 太郎">Customer: Taro Yamada</h1>
+    <span class="badge plan">Business</span>
+    <span class="badge ok" data-ja="有効">Active</span>
+    <div class="actions">
+      <button class="btn" data-ja="メールを送る">Send email</button>
+      <button class="btn danger" data-ja="停止">Suspend</button>
+      <button class="btn primary" data-ja="変更を保存">Save changes</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2 data-ja="プロフィール">Profile</h2>
+      <div class="profile">
+        <span class="avatar" id="avatar">TY</span>
+        <div>
+          <div class="name" id="name">Taro Yamada</div>
+          <dl class="kv">
+            <dt data-ja="メール">Email</dt><dd><a href="#" id="email">taro.yamada@example.com</a></dd>
+            <dt data-ja="電話">Phone</dt><dd id="phone">090-1234-5678</dd>
+            <dt data-ja="住所">Address</dt><dd id="address">3-2-1 Shibuya, Shibuya-ku, Tokyo 150-0002</dd>
+            <dt data-ja="顧客 ID">Customer ID</dt><dd><code id="cust">cus_Q9v2L8kT1xA0Pb</code></dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="card billing">
+      <h2 data-ja="請求">Billing</h2>
+      <div class="row">
+        <span class="brandmark" aria-hidden="true"></span>
+        <span class="cardno" id="cardno">4242 4242 4242 4242</span>
+        <span class="r" id="exp">Exp 09/28</span>
+      </div>
+      <div class="row">
+        <span data-ja="次回の請求">Next invoice</span>
+        <span class="r"><strong>¥48,000</strong> · 2026-10-01</span>
+      </div>
+      <div class="row">
+        <span data-ja="先月">Last month</span>
+        <span class="r">¥48,000 · <span class="badge ok" data-ja="支払い済み">Paid</span></span>
+      </div>
+      <div class="row">
+        <span data-ja="請求先メール">Billing email</span>
+        <span class="r" id="bill-email">accounting@yamada-corp.example</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 data-ja="API キー">API keys</h2>
+      <table>
+        <thead>
+          <tr><th data-ja="名前">Name</th><th data-ja="キー">Key</th><th data-ja="最終使用">Last used</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>production</td>
+            <td><code id="key1">sk_live_51H8xQ2Kp9mN4vT7rW3yB6c</code></td>
+            <td>2 min ago</td>
+            <td><button class="btn" data-ja="更新">Rotate</button></td>
+          </tr>
+          <tr>
+            <td>staging</td>
+            <td><code id="key2">sk_test_9aZ3fL0dU7qE2wR5tY8iO1p</code></td>
+            <td>Yesterday</td>
+            <td><button class="btn" data-ja="更新">Rotate</button></td>
+          </tr>
+          <tr>
+            <td>ci-runner</td>
+            <td><code id="key3">sk_test_M4nB7vC1xZ6lK9jH2gF5dS8</code></td>
+            <td>12 days ago</td>
+            <td><button class="btn" data-ja="更新">Rotate</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2 data-ja="最近の動き">Recent activity</h2>
+      <ul class="log">
+        <li><time>10:42</time><span data-ja="v2.3.1 をデプロイした">Deployed v2.3.1 to production</span><span class="badge ok" data-ja="成功">ok</span></li>
+        <li id="failed"><time>10:31</time><span class="bad" data-ja="Webhook の配信に失敗 (HTTP 500)。再試行を予約">Webhook delivery failed (HTTP 500), retry scheduled</span><span class="badge bad" data-ja="失敗">failed</span></li>
+        <li><time>09:58</time><span data-ja="API キー「ci-runner」を作成した">Created API key “ci-runner”</span><span class="badge warn" data-ja="確認">review</span></li>
+        <li><time>09:12</time><span data-ja="パスワードを変更した">Password changed</span><span class="badge ok" data-ja="成功">ok</span></li>
+        <li><time>Yesterday</time><span data-ja="請求先メールを更新した">Billing email updated</span><span class="badge ok" data-ja="成功">ok</span></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2 data-ja="API 利用状況（7 日間）">API usage (last 7 days)</h2>
+      <div class="bars" id="usage">
+        <div class="bar" style="height:38%"><span>Wed</span></div>
+        <div class="bar" style="height:52%"><span>Thu</span></div>
+        <div class="bar" style="height:47%"><span>Fri</span></div>
+        <div class="bar" style="height:22%"><span>Sat</span></div>
+        <div class="bar" style="height:18%"><span>Sun</span></div>
+        <div class="bar" style="height:64%"><span>Mon</span></div>
+        <div class="bar hi" style="height:100%"><span>Tue</span></div>
+      </div>
+      <div class="stats">
+        <div><strong>184,320</strong><span data-ja="リクエスト">requests</span></div>
+        <div><strong>0.4%</strong><span data-ja="エラー率">error rate</span></div>
+        <div><strong>212 ms</strong><span data-ja="p95 レイテンシ">p95 latency</span></div>
+      </div>
+    </section>
+
+    <section class="card notes">
+      <h2 data-ja="サポートメモ">Support notes</h2>
+      <p><span class="who">M. Sato · 10:35</span><span data-ja="電話で確認。Webhook の送信先を https://hooks.yamada-corp.example/pay に変更したいとのこと">Confirmed by phone. Wants the webhook endpoint changed to https://hooks.yamada-corp.example/pay</span></p>
+      <p><span class="who">K. Ito · Yesterday</span><span data-ja="請求先を経理部（accounting@yamada-corp.example）に変更。本人確認は生年月日 1988-04-12 で実施">Billing contact moved to accounting@yamada-corp.example. Identity verified with DOB 1988-04-12</span></p>
+      <p><span class="who">M. Sato · 3 days ago</span><span data-ja="Business プランへ移行。次回請求から適用">Upgraded to Business. Applies from the next invoice</span></p>
+    </section>
+  </div>
+</main>
+
+<aside class="guide" id="guide">
+  <strong>Snap Redact</strong>
+  <span data-ja="要素をクリックして選ぶ">click an element to select</span>
+  <span><kbd>1</kbd> <span data-ja="隠す">Hide</span></span>
+  <span><kbd>2</kbd> <span data-ja="囲う">Box</span></span>
+  <span><kbd>3</kbd> <span data-ja="矢印">Arrow</span></span>
+  <span><kbd>⌘C</kbd> <span data-ja="コピー">Copy</span></span>
+</aside>
+
+<script>
+  // 案内の言語と表示だけを URL で切り替える。ページ本体は英語のまま。
+  const q = new URLSearchParams(location.search);
+  if (q.get("lang") === "ja") {
+    document.documentElement.lang = "ja";
+    for (const el of document.querySelectorAll("[data-ja]")) {
+      el.textContent = el.dataset.ja;
+    }
+  }
+  if (q.has("clean")) {
+    document.getElementById("guide").classList.add("hidden");
+  }
+</script>
+</body>
+</html>

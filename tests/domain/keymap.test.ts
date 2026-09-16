@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { type KeyContext, resolveKey } from "../../src/domain/keymap";
+import { type KeyContext, NUDGE, NUDGE_FAST, resolveKey } from "../../src/domain/keymap";
 
 const annotate: KeyContext = { phase: "annotate", helpOpen: false, drawing: false };
 const selecting: KeyContext = { phase: "select", helpOpen: false, drawing: false };
-const key = (k: string, m: Partial<{ meta: boolean; ctrl: boolean }> = {}) => ({
+const key = (k: string, m: Partial<{ meta: boolean; ctrl: boolean; shift: boolean }> = {}) => ({
   key: k,
   meta: m.meta ?? false,
   ctrl: m.ctrl ?? false,
+  shift: m.shift ?? false,
 });
 
 describe("resolveKey / Escape", () => {
@@ -98,17 +99,55 @@ describe("resolveKey / tools", () => {
 
 describe("resolveKey / scroll keys", () => {
   it("swallows the keys that would scroll the page behind", () => {
-    for (const k of ["ArrowDown", "ArrowUp", "PageDown", "Home", "End", " "]) {
+    for (const k of ["PageDown", "Home", "End", " "]) {
       expect(resolveKey(key(k), annotate)).toEqual({ type: "swallow" });
     }
   });
 
   it("swallows them while selecting too", () => {
-    expect(resolveKey(key("ArrowDown"), selecting)).toEqual({ type: "swallow" });
+    expect(resolveKey(key("PageDown"), selecting)).toEqual({ type: "swallow" });
   });
 
   it("leaves the modified ones to the browser", () => {
     expect(resolveKey(key("ArrowDown", { meta: true }), annotate)).toBeNull();
+    expect(resolveKey(key("PageDown", { ctrl: true }), annotate)).toBeNull();
+  });
+});
+
+describe("resolveKey / arrow keys", () => {
+  it("nudges the selection by one pixel once a region is chosen", () => {
+    expect(resolveKey(key("ArrowUp"), annotate)).toEqual({ type: "nudge", dx: 0, dy: -NUDGE });
+    expect(resolveKey(key("ArrowDown"), annotate)).toEqual({ type: "nudge", dx: 0, dy: NUDGE });
+    expect(resolveKey(key("ArrowLeft"), annotate)).toEqual({ type: "nudge", dx: -NUDGE, dy: 0 });
+    expect(resolveKey(key("ArrowRight"), annotate)).toEqual({ type: "nudge", dx: NUDGE, dy: 0 });
+  });
+
+  it("moves further with Shift", () => {
+    expect(resolveKey(key("ArrowRight", { shift: true }), annotate)).toEqual({
+      type: "nudge",
+      dx: NUDGE_FAST,
+      dy: 0,
+    });
+    expect(NUDGE_FAST).toBeGreaterThan(NUDGE);
+  });
+
+  it("swallows them before a region is chosen, so the page behind does not scroll", () => {
+    expect(resolveKey(key("ArrowDown"), selecting)).toEqual({ type: "swallow" });
+    expect(resolveKey(key("ArrowDown", { shift: true }), selecting)).toEqual({ type: "swallow" });
+  });
+
+  it("swallows them while something is being dragged", () => {
+    expect(resolveKey(key("ArrowDown"), { ...annotate, drawing: true })).toEqual({
+      type: "swallow",
+    });
+  });
+
+  it("still nudges while the help is open", () => {
+    expect(resolveKey(key("ArrowLeft"), { ...annotate, helpOpen: true })).toEqual({
+      type: "nudge",
+      dx: -NUDGE,
+      dy: 0,
+    });
   });
 });
 

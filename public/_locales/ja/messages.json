@@ -22,7 +22,7 @@
   "actHelp": { "message": "ヘルプ" },
 
   "hintDrag": {
-    "message": "ドラッグで範囲を選択",
+    "message": "ドラッグで範囲を、クリックで要素を選択",
     "description": "Shown before a region is chosen, where the screen is just dimmed."
   },
   "hintAll": {
@@ -36,6 +36,19 @@
     "description": "Left column of the help panel. A gesture, not a key."
   },
   "helpEdgeDesc": { "message": "選択範囲を広げる / 狭める" },
+  "helpClick": {
+    "message": "要素をクリック",
+    "description": "Left column of the help panel. A gesture, not a key."
+  },
+  "helpClickDesc": { "message": "その要素をぴったり隠す / 囲う" },
+  "helpNudgeDesc": {
+    "message": "選択範囲を $STEP$px 動かす。Shift で $FAST$px",
+    "description": "Next to the arrow keys in the help panel.",
+    "placeholders": {
+      "step": { "content": "$1", "example": "1" },
+      "fast": { "content": "$2", "example": "10" }
+    }
+  },
   "helpUndoDesc": { "message": "直前の 1 つを取り消す" },
   "helpCopyDesc": { "message": "コピーして閉じる" },
   "helpSaveDesc": { "message": "PNG で保存して閉じる" },

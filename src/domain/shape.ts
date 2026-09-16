@@ -1,4 +1,4 @@
-import { type Drag, diagonal, type Point, toRect } from "./rect";
+import { type Drag, diagonal, type Point, type Rect, toRect } from "./rect";
 
 /** 使える道具は 3 つだけ。増やすと選ぶ手間が増えるので、ここは意図的に固定。 */
 export type ToolId = "fill" | "box" | "arrow";
@@ -96,4 +96,29 @@ export function arrowGeometry(s: Drag, head: number): ArrowGeometry {
       y: s.y1 - Math.sin(angle + BARB_ANGLE) * head,
     },
   };
+}
+
+/**
+ * 押してから離すまでにほとんど動いていないか。
+ *
+ * 動いていないなら、範囲や図形を引いたのではなく、その場所にあるものを指した。
+ * 引いたつもりの取りこぼしと、指したつもりのクリックを同じ閾値で分けている。
+ *
+ * @param d 押した点と離した点
+ * @returns クリックとみなすなら `true`
+ */
+export function isClick(d: Drag): boolean {
+  return diagonal(d) < MIN_SELECTION;
+}
+
+/**
+ * 矩形をそのまま図形にする。要素をクリックして隠す / 囲うときに使う。
+ *
+ * @param r 図形にする矩形
+ * @param tool 使う道具
+ * @param color 線の色。塗り潰しでは無視される
+ * @returns 左上から右下へ引いた図形
+ */
+export function fromRect(r: Rect, tool: ToolId, color: string): Shape {
+  return { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h, tool, color };
 }

@@ -121,3 +121,39 @@ function snapAxis(v: number, max: number, snap: number): number {
 export function diagonal(d: Drag): number {
   return Math.hypot(d.x1 - d.x0, d.y1 - d.y0);
 }
+
+/**
+ * 矩形を平行移動し、枠の中に収める。
+ *
+ * 選択範囲は縁のハンドルで伸縮できるが、掴んで動かす操作は無い。中を掴むと図形を
+ * 描く操作になるので、同じ場所に移動を割り当てると取り合いになる。矢印キーなら
+ * 取り合いが起きず、1 ピクセル単位で狙える。
+ *
+ * 枠の外へは出さない。撮った絵の無いところまで範囲に入ると、書き出した PNG に
+ * 空白の帯が付く。端に着いたらそこで止まり、大きさは変えない。
+ *
+ * @param r 動かす矩形
+ * @param dx 右方向の移動量。負なら左
+ * @param dy 下方向の移動量。負なら上
+ * @param frame 収める枠の大きさ
+ * @returns 大きさはそのままで、枠の中に収めた矩形
+ */
+export function nudgeRect(r: Rect, dx: number, dy: number, frame: { w: number; h: number }): Rect {
+  return {
+    ...r,
+    x: clamp(r.x + dx, 0, Math.max(0, frame.w - r.w)),
+    y: clamp(r.y + dy, 0, Math.max(0, frame.h - r.h)),
+  };
+}
+
+/**
+ * 値を範囲に収める。
+ *
+ * @param v 収める値
+ * @param lo 下限
+ * @param hi 上限
+ * @returns `lo` 以上 `hi` 以下の値
+ */
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(Math.max(v, lo), hi);
+}

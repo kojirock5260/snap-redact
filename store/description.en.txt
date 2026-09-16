@@ -1,0 +1,35 @@
+Select an area, hide it, box it, point at it, then straight to the clipboard. Nothing leaves your machine.
+
+Snap Redact is for the moment you want to paste part of a page into Slack, a bug report, or a doc, with something blacked out and something pointed at. One trip: select, mark, copy. No editor tab, no account, no upload.
+
+HOW IT WORKS
+1. Click the toolbar icon, use the right-click menu, or press Cmd+Shift+E (Ctrl+Shift+E on Windows and Linux).
+2. Drag an area, or click an element to select exactly it. Cmd+A / Ctrl+A selects the whole visible page.
+3. Hide (1), Box (2) or Arrow (3). Drag inside the selection to draw, or click an element to hide or box it precisely.
+4. Copy (Cmd+C or Enter) or save as PNG (Cmd+S). Done.
+
+REDACTION THAT CANNOT BE REVERSED
+Hide paints a solid, opaque block. There is no blur and no mosaic, on purpose: both can be reversed, and a screenshot you have already shared cannot be taken back. What is hidden is gone from the image.
+
+NOTHING LEAVES YOUR MACHINE
+- No server, no cloud, no analytics, no crash reports, no external fonts
+- No storage permission: the extension keeps nothing, not even settings
+- The capture is processed inside the page and handed straight to your clipboard or your downloads folder
+
+NO INSTALL WARNINGS
+Only three permissions: activeTab, scripting and contextMenus. None of them shows a warning. clipboardWrite and downloads are deliberately not requested.
+
+MADE FOR
+- Developers and QA filing bug reports
+- Support teams sharing a customer's screen with account details hidden
+- Anyone pasting screenshots into chat and docs
+
+DETAILS
+- Element pick: hover shows a dashed outline, click takes that element's rectangle. The page itself is never modified
+- Move the selection with the arrow keys (Shift for 10px), resize it with eight handles
+- Retina-quality output: the image is exported at device pixel size
+- Use the keyboard shortcut to capture hover menus and tooltips without moving the mouse
+- English and Japanese, following your browser language
+- Area capture only. Full-page capture is deliberately not included
+
+Open source: https://github.com/kojirock5260/snap-redact

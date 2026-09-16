@@ -1,20 +1,31 @@
 import { copyPng } from "../application/clipboard";
 import { savePng } from "../application/download";
+import { rectsUnder } from "../application/elements";
 import { message } from "../application/i18n";
 import { snapFileName } from "../domain/filename";
 import { type Handle, handleAt, handleCursor, resizeRect } from "../domain/handle";
 import type { Action } from "../domain/keymap";
 import { resolveKey } from "../domain/keymap";
+import { pickRect } from "../domain/pick";
 import {
   contains,
   type Drag,
   EDGE_SNAP,
+  nudgeRect,
   type Point,
   type Rect,
   snapPoint,
   toRect,
 } from "../domain/rect";
-import { COLORS, isDrawable, MIN_SELECTION, type Shape, type ToolId } from "../domain/shape";
+import {
+  COLORS,
+  fromRect,
+  isClick,
+  isDrawable,
+  MIN_SELECTION,
+  type Shape,
+  type ToolId,
+} from "../domain/shape";
 import css from "./overlay.css?raw";
 import { drawScene, flatten } from "./scene";
 import { createHelp, createHint, createToolbar, mod, type Toolbar } from "./toolbar";
@@ -47,7 +58,21 @@ type Session = {
   dpr: number;
   captured: { w: number; h: number };
   region: Rect | null;
-  drag: (Drag & { tool?: ToolId; color?: string }) | null;
+  /**
+   * 引いている最中のドラッグ。引いていなければ `null`。
+   *
+   * `pick` は押した時点でポインタの下にあった要素の矩形。動かさずに離したとき、
+   * 引いた矩形の代わりにこれを使う。押した時点で控えておくのは、離した時点で
+   * 引き直すと、押したときに光っていたものと違う要素になりうるため。
+   */
+  drag: (Drag & { tool?: ToolId; color?: string; pick: Rect | null }) | null;
+  /**
+   * ポインタの下にある要素の矩形。クリックすると選択範囲か図形になる。
+   * 指しているものが無ければ `null`。
+   *
+   * ポインタが動くたびに引き直す。引いている最中は画面に出さないが、値は残す。
+   */
+  pick: Rect | null;
   /**
    * 掴んでいる選択範囲のハンドルと、掴んだ時点の矩形。掴んでいなければ `null`。
    *
@@ -159,6 +184,7 @@ function open(image: HTMLImageElement): Session {
     captured: { w: window.innerWidth, h: window.innerHeight },
     region: null,
     drag: null,
+    pick: null,
     resizing: null,
     shapes: [],
     tool: "fill",
@@ -279,13 +305,21 @@ function down(s: Session, e: PointerEvent): void {
     // 掴んだ時点の矩形を控えておく。Esc で戻すのに要る。
     s.resizing = { handle: grabbed, from: region };
   } else if (s.phase === "select") {
-    s.drag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+    s.drag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, pick: pickAt(s, e) };
   } else if (s.region && contains(s.region, p)) {
     // 描き始めたということは、ヘルプはもう読み終わっている。
     if (s.helpOpen) {
       setHelp(s, false);
     }
-    s.drag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, tool: s.tool, color: s.color };
+    s.drag = {
+      x0: p.x,
+      y0: p.y,
+      x1: p.x,
+      y1: p.y,
+      tool: s.tool,
+      color: s.color,
+      pick: pickAt(s, e),
+    };
   }
 
   (e.target as Element | null)?.setPointerCapture?.(e.pointerId);
@@ -314,8 +348,8 @@ function move(s: Session, e: PointerEvent): void {
 
   const drag = s.drag;
   if (!drag) {
-    // 掴んでいないときは、縁に近づいたことをカーソルで知らせる。
-    hover(s, p);
+    // 掴んでいないときは、縁に近づいたことをカーソルで、指している要素を枠で知らせる。
+    hover(s, e);
     return;
   }
   drag.x1 = p.x;
@@ -345,19 +379,28 @@ function up(s: Session): void {
   }
   s.drag = null;
 
+  // 動かさずに離したなら、引いた矩形ではなく、押した時点でポインタの下にあった
+  // 要素をもらう。引いた矩形はどうせ小さすぎて使えない。
+  const click = isClick(drag);
+
   if (s.phase === "select") {
     hideSize(s);
-    const r = toRect(drag);
-    if (r.w >= MIN_SELECTION && r.h >= MIN_SELECTION) {
+    const r = click ? drag.pick : toRect(drag);
+    if (r && r.w >= MIN_SELECTION && r.h >= MIN_SELECTION) {
       commit(s, r);
     }
   } else if (drag.tool && drag.color) {
-    const shape: Shape = { ...drag, tool: drag.tool, color: drag.color };
-    if (isDrawable(shape)) {
+    const shape: Shape | null = click
+      ? drag.pick && fromRect(drag.pick, drag.tool, drag.color)
+      : { ...drag, tool: drag.tool, color: drag.color };
+    if (shape && isDrawable(shape)) {
       s.shapes.push(shape);
     }
   }
 
+  // 範囲が決まったか図形が乗ったので、同じ場所を指していても意味が変わる。
+  // 次にポインタが動いたときに引き直す。
+  s.pick = null;
   render(s);
 }
 
@@ -385,7 +428,7 @@ function commit(s: Session, r: Rect): void {
  */
 function key(s: Session, e: KeyboardEvent): void {
   const action = resolveKey(
-    { key: e.key, meta: e.metaKey, ctrl: e.ctrlKey },
+    { key: e.key, meta: e.metaKey, ctrl: e.ctrlKey, shift: e.shiftKey },
     { phase: s.phase, helpOpen: s.helpOpen, drawing: s.drag !== null || s.resizing !== null },
   );
   if (!action) {
@@ -430,6 +473,9 @@ function run(s: Session, action: Action): void {
     case "selectAll":
       selectAll(s);
       return;
+    case "nudge":
+      nudge(s, action.dx, action.dy);
+      return;
     case "selectTool":
       setTool(s, action.tool);
       return;
@@ -453,6 +499,7 @@ function cancelDrag(s: Session): void {
     s.resizing = null;
   }
   s.drag = null;
+  s.pick = null;
   hideSize(s);
   render(s);
 }
@@ -471,8 +518,31 @@ function cancelDrag(s: Session): void {
 function selectAll(s: Session): void {
   // 引いている最中に押されることがある。残しておくと、指を離した時点で上書きされる。
   s.drag = null;
+  s.pick = null;
   commit(s, { x: 0, y: 0, w: s.captured.w, h: s.captured.h });
   hideSize(s);
+  render(s);
+}
+
+/**
+ * 選択範囲を矢印キーで動かす。
+ *
+ * 図形は動かさない。図形は撮った絵の上の場所に付いているもので、切り出す範囲を
+ * ずらしても隠したい場所は変わらない。
+ *
+ * 呼ばれるのは範囲を決めたあと、何も引いていないときだけ（{@link resolveKey} を参照）。
+ *
+ * @param s 対象のセッション
+ * @param dx 右方向の移動量（CSS ピクセル）
+ * @param dy 下方向の移動量（CSS ピクセル）
+ */
+function nudge(s: Session, dx: number, dy: number): void {
+  if (!s.region) {
+    return;
+  }
+  s.region = nudgeRect(s.region, dx, dy, s.captured);
+  // 範囲が動くと、ポインタが範囲の中に居るかどうかも変わる。次の動きで引き直す。
+  s.pick = null;
   render(s);
 }
 
@@ -642,30 +712,84 @@ function render(s: Session): void {
   const shapes = preview ? [...s.shapes, preview] : s.shapes;
 
   // 引いている最中は出さない。動いている点の周りに四角が湧くと目移りする。
-  const handles = s.phase === "annotate" && !s.drag && !s.resizing;
+  const idle = !s.drag && !s.resizing;
+  const handles = s.phase === "annotate" && idle;
+  // 指している要素も同じ。引き始めたら、引いている矩形だけを見せる。
+  const pick = idle ? s.pick : null;
 
   // 案内は範囲が決まるまで出しっぱなし。引いている最中に引っ込めると、狙いを定めて
   // いる視界の隅で何かが動くことになる。⌘A は引き始めたあとでも選び直せるので、
   // 残っているほうが役に立つ。
   s.hint.classList.toggle("on", s.phase === "select");
 
-  drawScene(s.ctx, { image: s.image, captured: s.captured, region, shapes, handles }, s.dpr, {
+  drawScene(s.ctx, { image: s.image, captured: s.captured, region, shapes, handles, pick }, s.dpr, {
     w: window.innerWidth,
     h: window.innerHeight,
   });
 }
 
 /**
- * ポインタの下にあるものに合わせてカーソルを変える。
+ * ポインタの下にあるものに合わせて、カーソルと要素の枠を変える。
  *
  * 掴めるかどうかは見た目だけでは分かりにくいので、近づいた時点で形で知らせる。
+ * クリックで何が選ばれるかも同じで、押す前に枠で見せておく。
+ *
+ * ツールバーの上では何も指さない。その下にあるページの要素を光らせても、
+ * 押せるのはボタンのほうなので嘘になる。
  *
  * @param s 対象のセッション
- * @param p ポインタの位置
+ * @param e ポインタイベント
  */
-function hover(s: Session, p: Point): void {
-  const grabbed = s.region && s.phase === "annotate" ? handleAt(s.region, p) : null;
+function hover(s: Session, e: PointerEvent): void {
+  const onBar = s.toolbar.el.contains(e.target as Node | null);
+  const p = point(s, e);
+  const grabbed = !onBar && s.region && s.phase === "annotate" ? handleAt(s.region, p) : null;
   s.canvas.style.cursor = grabbed ? handleCursor(grabbed) : "";
+
+  const pick = onBar || grabbed ? null : pickAt(s, e);
+  // 同じ要素の上を動いている間は描き直さない。動くたびに全画面を描くのは無駄。
+  if (!sameRect(pick, s.pick)) {
+    s.pick = pick;
+    render(s);
+  }
+}
+
+/**
+ * ポインタの下にある要素から、クリックで使う矩形を求める。
+ *
+ * 範囲を決める前はどこでも効く。決めたあとは、範囲の中で「隠す」か「囲う」を
+ * 持っているときだけ。矢印は向きが要るので、クリック 1 回では引けない。縁の
+ * ハンドルの上でも効かせない。掴む操作と取り合いになる。
+ *
+ * 要素の判定には端に寄せる前の座標を使う。寄せたあとの座標は端そのものになり、
+ * その下には何も無い。
+ *
+ * @param s 対象のセッション
+ * @param e ポインタイベント
+ * @returns クリックで使う矩形。無ければ `null`
+ */
+function pickAt(s: Session, e: PointerEvent): Rect | null {
+  if (s.phase === "annotate") {
+    const p = point(s, e);
+    if (!s.region || s.tool === "arrow" || !contains(s.region, p) || handleAt(s.region, p)) {
+      return null;
+    }
+  }
+  return pickRect(rectsUnder({ x: e.clientX, y: e.clientY }, s.host), s.captured, MIN_SELECTION);
+}
+
+/**
+ * 2 つの矩形が同じか。どちらも無い場合も同じとみなす。
+ *
+ * @param a 比べる矩形
+ * @param b 比べる矩形
+ * @returns 位置も大きさも同じなら `true`
+ */
+function sameRect(a: Rect | null, b: Rect | null): boolean {
+  if (a === null || b === null) {
+    return a === b;
+  }
+  return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
 }
 
 /**

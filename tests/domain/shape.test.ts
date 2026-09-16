@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { arrowGeometry, COLORS, isDrawable, type Shape, TOOLS } from "../../src/domain/shape";
+import { toRect } from "../../src/domain/rect";
+import {
+  arrowGeometry,
+  COLORS,
+  fromRect,
+  isClick,
+  isDrawable,
+  MIN_SELECTION,
+  type Shape,
+  TOOLS,
+} from "../../src/domain/shape";
 
 const shape = (over: Partial<Shape>): Shape => ({
   x0: 0,
@@ -74,5 +84,41 @@ describe("arrowGeometry", () => {
 describe("COLORS", () => {
   it("has no duplicates", () => {
     expect(new Set(COLORS).size).toBe(COLORS.length);
+  });
+});
+
+describe("isClick", () => {
+  it("treats a press without movement as a click", () => {
+    expect(isClick({ x0: 10, y0: 10, x1: 10, y1: 10 })).toBe(true);
+  });
+
+  it("tolerates the small wobble of a hand", () => {
+    expect(isClick({ x0: 10, y0: 10, x1: 13, y1: 12 })).toBe(true);
+  });
+
+  it("treats a real drag as not a click", () => {
+    expect(isClick({ x0: 10, y0: 10, x1: 40, y1: 10 })).toBe(false);
+  });
+
+  it("uses the same threshold as the smallest selection, so the two never overlap", () => {
+    expect(isClick({ x0: 0, y0: 0, x1: MIN_SELECTION, y1: 0 })).toBe(false);
+  });
+});
+
+describe("fromRect", () => {
+  it("runs from the top left to the bottom right", () => {
+    expect(fromRect({ x: 10, y: 20, w: 30, h: 40 }, "fill", "#000")).toEqual({
+      x0: 10,
+      y0: 20,
+      x1: 40,
+      y1: 60,
+      tool: "fill",
+      color: "#000",
+    });
+  });
+
+  it("round-trips through toRect", () => {
+    const r = { x: 5, y: 6, w: 70, h: 80 };
+    expect(toRect(fromRect(r, "box", "#fff"))).toEqual(r);
   });
 });

@@ -28,6 +28,13 @@ export interface Scene {
    * 画像にハンドルが写ることはない。
    */
   handles?: boolean;
+  /**
+   * ポインタの下にある要素の矩形。クリックすると選択範囲か図形になる候補。
+   * 省略するか `null` なら出さない。
+   *
+   * ハンドルと同じく画面表示だけのもので、書き出しには乗らない。
+   */
+  pick?: Rect | null;
 }
 
 /**
@@ -98,27 +105,30 @@ export function drawScene(
   ctx.fillRect(0, 0, viewport.w, viewport.h);
 
   const r = scene.region;
-  if (!r || r.w < 1 || r.h < 1) {
-    return;
+  if (r && r.w >= 1 && r.h >= 1) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x, r.y, r.w, r.h);
+    ctx.clip();
+    ctx.drawImage(scene.image, 0, 0, scene.captured.w, scene.captured.h);
+    for (const s of scene.shapes) {
+      drawShape(ctx, s);
+    }
+    ctx.restore();
+
+    // 0.5 ずらすと 1 物理ピクセルの線が半分ににじまず、くっきり出る。
+    ctx.strokeStyle = "rgba(255,255,255,.92)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+
+    if (scene.handles) {
+      drawHandles(ctx, r);
+    }
   }
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(r.x, r.y, r.w, r.h);
-  ctx.clip();
-  ctx.drawImage(scene.image, 0, 0, scene.captured.w, scene.captured.h);
-  for (const s of scene.shapes) {
-    drawShape(ctx, s);
-  }
-  ctx.restore();
-
-  // 0.5 ずらすと 1 物理ピクセルの線が半分ににじまず、くっきり出る。
-  ctx.strokeStyle = "rgba(255,255,255,.92)";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-
-  if (scene.handles) {
-    drawHandles(ctx, r);
+  // 範囲の枠より手前。範囲の中の要素を指しているときに、枠の下に隠れないように。
+  if (scene.pick) {
+    drawPick(ctx, scene.pick);
   }
 }
 
@@ -146,6 +156,33 @@ function drawHandles(ctx: CanvasRenderingContext2D, r: Rect): void {
 }
 
 /**
+ * クリックで選ばれる要素の矩形を見せる。
+ *
+ * 暗い実線の上に白い破線を重ねる。幕の上でも、明るく抜いた範囲の中でも、
+ * どちらか片方は必ず見える。ハンドルと同じ考え方。選択範囲の枠は白い実線なので、
+ * 破線にしておけば取り違えない。
+ *
+ * @param ctx 描画先
+ * @param r 要素の矩形
+ */
+function drawPick(ctx: CanvasRenderingContext2D, r: Rect): void {
+  const x = r.x + 0.5;
+  const y = r.y + 0.5;
+  const w = Math.max(r.w - 1, 0);
+  const h = Math.max(r.h - 1, 0);
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,.08)";
+  ctx.fillRect(r.x, r.y, r.w, r.h);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(9,11,15,.7)";
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = "rgba(255,255,255,.95)";
+  ctx.strokeRect(x, y, w, h);
+  ctx.restore();
+}
+
+/**
  * 選択範囲だけを切り出した canvas を作る。これが最終的な成果物。
  *
  * 出力の大きさは CSS ピクセルではなく物理ピクセル（× dpr）にしている。
@@ -162,7 +199,10 @@ export function flatten(scene: Scene & { region: Rect }, dpr: number): HTMLCanva
   canvas.width = Math.round(region.w * dpr);
   canvas.height = Math.round(region.h * dpr);
 
-  const ctx = canvas.getContext("2d");
+  // 透明チャンネルを持たせない。選択範囲は撮った絵の中に収まり、その上に乗る図形も
+  // すべて不透明なので、透けるピクセルは 1 つも無い。持っていると PNG が RGBA で
+  // 書かれ、全部 255 のチャンネルにファイルの 6% ほどを使う。無くせば RGB になる。
+  const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) {
     return canvas;
   }

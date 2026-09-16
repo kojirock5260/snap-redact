@@ -1,4 +1,5 @@
 import { message } from "../application/i18n";
+import { NUDGE, NUDGE_FAST } from "../domain/keymap";
 import { COLORS, TOOLS, type ToolId } from "../domain/shape";
 
 /** Mac かどうか。修飾キーの表記を切り替えるためだけに使う。 */
@@ -140,6 +141,11 @@ function helpRows(): { keys: string[]; desc: string; plain?: boolean }[] {
   const tools = TOOLS.map((t) => message(t.labelKey)).join(" / ");
   return [
     { keys: [message("helpEdge")], desc: message("helpEdgeDesc"), plain: true },
+    { keys: [message("helpClick")], desc: message("helpClickDesc"), plain: true },
+    {
+      keys: ["\u2191", "\u2193", "\u2190", "\u2192"],
+      desc: message("helpNudgeDesc", String(NUDGE), String(NUDGE_FAST)),
+    },
     { keys: TOOLS.map((t) => t.key), desc: tools },
     { keys: [mod("Z")], desc: message("helpUndoDesc") },
     { keys: [mod("C"), "Enter"], desc: message("helpCopyDesc") },
@@ -153,7 +159,8 @@ function helpRows(): { keys: string[]; desc: string; plain?: boolean }[] {
  * ヘルプパネルを組み立てる。
  *
  * ツールバーのボタンにもキーは書いてあるので、ここに載せるのは
- * ボタンを見ても分からないこと（縁を掴めること、Esc で抜けられること）が中心。
+ * ボタンを見ても分からないこと（縁を掴めること、要素をクリックで隠せること、
+ * 矢印キーで動かせること、Esc で抜けられること）が中心。
  *
  * 全体選択（⌘A）は載せていない。範囲を決めたあとに要るものではなく、決める前の
  * 案内で伝えているため（{@link createHint} を参照）。
@@ -188,11 +195,13 @@ export function createHelp(): HTMLElement {
  * 範囲を引く前に出す案内を組み立てる。
  *
  * 撮った直後の画面は暗くなるだけで、何を求められているのかが分からない。ドラッグ
- * すれば選べることも、窓が狭いときの逃げ道（全体選択）も、知らなければ辿り着けない。
+ * か要素のクリックで選べることも、窓が狭いときの逃げ道（全体選択）も、知らなければ
+ * 辿り着けない。
  *
  * 載せるのはその 2 つだけ。ここはまだ何も選べていない段階なので、いま踏める道が
  * 全部でいくつあるのかが分かることに意味がある。3 つ目を足すと一覧に見えてしまい、
- * 読む対象になってしまう。ヘルプは範囲を決めたあとツールバーから辿れる。
+ * 読む対象になってしまう。ドラッグとクリックを 1 つにまとめているのはそのため。
+ * ヘルプは範囲を決めたあとツールバーから辿れる。
  *
  * ツールバーと同じ場所に出す。範囲が決まるとそのまま入れ替わるので、目線を動かさずに
  * 次の操作へ移れる。

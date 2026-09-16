@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contains, diagonal, EDGE_SNAP, snapPoint, toRect } from "../../src/domain/rect";
+import { contains, diagonal, EDGE_SNAP, nudgeRect, snapPoint, toRect } from "../../src/domain/rect";
 
 describe("toRect", () => {
   it("keeps a drag made toward the bottom right", () => {
@@ -89,5 +89,31 @@ describe("diagonal", () => {
   it("measures the straight distance regardless of direction", () => {
     expect(diagonal({ x0: 0, y0: 0, x1: 3, y1: 4 })).toBe(5);
     expect(diagonal({ x0: 3, y0: 4, x1: 0, y1: 0 })).toBe(5);
+  });
+});
+
+describe("nudgeRect", () => {
+  const frame = { w: 1280, h: 800 };
+  const r = { x: 100, y: 100, w: 200, h: 120 };
+
+  it("moves by the given amount", () => {
+    expect(nudgeRect(r, 1, 0, frame)).toEqual({ ...r, x: 101 });
+    expect(nudgeRect(r, 0, -10, frame)).toEqual({ ...r, y: 90 });
+  });
+
+  it("stops at the left and top edges without shrinking", () => {
+    expect(nudgeRect({ ...r, x: 3 }, -10, 0, frame)).toEqual({ ...r, x: 0 });
+    expect(nudgeRect({ ...r, y: 3 }, 0, -10, frame)).toEqual({ ...r, y: 0 });
+  });
+
+  it("stops at the right and bottom edges without shrinking", () => {
+    expect(nudgeRect({ ...r, x: 1075 }, 10, 0, frame)).toEqual({ ...r, x: 1080 });
+    expect(nudgeRect({ ...r, y: 675 }, 0, 10, frame)).toEqual({ ...r, y: 680 });
+  });
+
+  it("leaves a frame-sized selection where it is", () => {
+    const all = { x: 0, y: 0, w: frame.w, h: frame.h };
+    expect(nudgeRect(all, 10, 10, frame)).toEqual(all);
+    expect(nudgeRect(all, -10, -10, frame)).toEqual(all);
   });
 });

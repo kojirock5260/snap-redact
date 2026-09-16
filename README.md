@@ -22,7 +22,7 @@ requested, so the extension keeps nothing. See the
 
 ## Install
 
-Chrome Web Store: (not published)
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe).
 
 See the [changelog](CHANGELOG.md) for what changed in each version.
 
@@ -55,15 +55,25 @@ captured.
 | Action | Key |
 |---|---|
 | Select an area | drag |
+| Select an element | click it |
 | Select the whole capture | `Cmd+A` |
 | Adjust the selection | drag a handle on its edge |
+| Move the selection | `↑` `↓` `←` `→` (`Shift` for 10px) |
 | Draw a shape | drag inside the selection |
+| Hide / Box an element | click it inside the selection |
 | Hide / Box / Arrow | `1` / `2` / `3` |
 | Undo | `Cmd+Z` |
 | Copy | `Cmd+C` or `Enter` |
 | Save as PNG | `Cmd+S` |
 | Help | `?` |
 | Cancel | `Esc` |
+
+When what you want fits in one element, clicking it is the fastest way to select it.
+The element under the pointer is outlined with a dashed frame, and a click takes its
+rectangle as the selection. The same works after the selection is made: with Hide or
+Box chosen, click an element inside the selection and a shape snaps exactly to it. A
+table cell, an avatar, or a line holding an email address is easier to hit this way
+than by tracing its edges.
 
 The overlay lives inside the page viewport, so unlike an OS screenshot you cannot
 start a drag outside the window. Points within 12px of an edge snap to it, so the
@@ -89,8 +99,12 @@ in plain Node.
 
 - **Redaction is always a solid opaque fill.** Mosaic and blur are not offered,
   because both can be reversed
-- **The selection can be resized, but not moved.** Eight handles sit on its edges.
-  Moving it wholesale is not offered; drag the opposite edges instead, or start over
+- **The selection is resized with its handles and moved with the arrow keys.** There is
+  no drag-to-move; dragging inside the selection is how shapes are drawn
+- **Clicking an element only borrows its rectangle.** The page DOM is never modified;
+  the rectangle is laid over the captured image, so what you see is exactly what you
+  get. There is no automatic detection. You decide what to hide, every time. A
+  cross-origin iframe is opaque, so the whole iframe counts as one element
 - **Shapes cannot be moved or resized after drawing.** Undo and draw again
 - **No text annotation.** Writing "see the arrow" next to the image is enough
 - **Some pages cannot be injected into**: the Web Store, `chrome://` pages, and
