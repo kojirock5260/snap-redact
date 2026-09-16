@@ -2,6 +2,8 @@ Select an area, hide it, box it, point at it, then straight to the clipboard. No
 
 Snap Redact is for the moment you want to paste part of a page into Slack, a bug report, or a doc, with something blacked out and something pointed at. One trip: select, mark, copy. No editor tab, no account, no upload.
 
+The UI follows your browser language, English or Japanese. The screenshots were taken in a Japanese browser.
+
 HOW IT WORKS
 1. Click the toolbar icon, use the right-click menu, or press Cmd+Shift+E (Ctrl+Shift+E on Windows and Linux).
 2. Drag an area, or click an element to select exactly it. Cmd+A / Ctrl+A selects the whole visible page.
