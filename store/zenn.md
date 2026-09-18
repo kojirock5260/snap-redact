@@ -1,9 +1,11 @@
 ---
-title: "権限の警告ゼロ・通信ゼロで、スクリーンショットの範囲を黒塗りしてそのまま貼る Chrome 拡張を作った"
-emoji: "⬛"
+# 2026-09-18 に公開済み: https://zenn.dev/kojirock/articles/504b403e72b683
+# このファイルは公開した版の控え。Zenn の Web エディタで投稿したので、下の設定は画面で入れた値。
+title: "スクリーンショットの範囲を黒塗りしてそのまま貼る Chrome 拡張を作った"
+emoji: "🖼️"
 type: "tech"
-topics: ["chrome", "chromeextension", "typescript", "screenshot", "privacy"]
-published: false
+topics: ["chrome", "chromeextension", "screenshot"]
+published: true
 ---
 
 画面の一部を Slack やバグ報告に貼りたい。ただしメールアドレスやカード番号は隠したいし、見てほしい所には矢印を付けたい。そのたびに OS のスクリーンショットを撮って、画像編集アプリで開いて、塗って、書き出して、貼る。これが面倒で、Chrome 拡張を作りました。
@@ -81,59 +83,6 @@ export async function copyPng(blob: Blob): Promise<CopyOutcome> {
 ![コピーした画像を GitHub の Issue に貼ったところ](https://kojirock5260.github.io/snap-redact/img/03-pasted.png)
 *貼った先でそのまま。Retina のピクセル数で書き出すので、文字がぼやけません*
 
-## 実装で工夫したところ
-
-### 撮影と注入の流れ
-
-Service Worker で `chrome.tabs.captureVisibleTab` が返す PNG の data URL を、コンテンツスクリプトに渡して Shadow DOM の中の canvas に描いています。撮る前に必ず前回のオーバーレイへ「閉じろ」と送っているのが要点で、これをしないと連続で起動したときに暗転した画面がそのまま次の画像に写り込みます。
-
-```ts
-const alive = await send(tabId, { type: "abort" });
-if (alive) {
-  await sleep(REPAINT_MS); // 閉じたあとの再描画を待つ
-}
-const [dataUrl] = await Promise.all([
-  chrome.tabs.captureVisibleTab({ format: "png" }),
-  alive ? null : chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] }),
-]);
-await chrome.tabs.sendMessage(tabId, { type: "start", dataUrl });
-```
-
-### 要素をクリックして選ぶ
-
-オーバーレイはページの上に被さっているので、普通の当たり判定ではオーバーレイ自身しか取れません。`document.elementsFromPoint` はその点にある要素を奥まで全部返すので、自分（Shadow DOM のホスト）と `html` / `body` を除けば、残りがページの要素です。手前から順に見て、小さすぎるものと画面全体を覆うものを飛ばし、最初に使える矩形を採用します。
-
-```ts
-export function rectsUnder(p: Point, host: Element): Rect[] {
-  return document
-    .elementsFromPoint(p.x, p.y)
-    .filter((el) => el !== host && el !== document.documentElement && el !== document.body)
-    .map((el) => {
-      const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, w: r.width, h: r.height };
-    });
-}
-```
-
-![範囲の中の住所にポインタを載せると点線の枠が出て、クリックするとその要素だけが隠れる](https://kojirock5260.github.io/snap-redact/img/02-click-to-hide.png)
-*「隠す」を持って要素にポインタを載せると点線の枠が出る。クリックでその要素だけが黒くなる*
-
-ページの DOM は書き換えません。矩形を借りて、撮った絵の上に置くだけです。だから見えているものと結果は常に一致します。自動検出もあえて持たせていません。何を隠すかは毎回人が決めます。
-
-### 二重注入への備え
-
-拡張を読み込み直すと古いコンテンツスクリプトは死にますが、`window` に付けた印はページに残ります。「もう入れた」という真偽値で判断すると、死んだ購読を生きていると誤解して、以後そのタブでは何も起きなくなります。なので印ではなく listener の実体を `window` に控えておき、次に注入されたときは外してから貼り直しています。
-
-### テストできる形にする
-
-`domain`（純粋なルール）、`application`（ブラウザ API 越しの副作用）、`presentation`（Shadow DOM と canvas）の三層で、`domain` は上の層を import しません。キー解釈、矢印の穂先の幾何、どのページで使えるか、要素の矩形の選び方といった壊れやすい所を、DOM なしで Vitest から叩けます。
-
-対訳（`_locales/ja` と `_locales/en`）の抜けもテストで見ています。`chrome.i18n.getMessage` は見つからないキーに空文字を返すので、片方の言語だけボタンの文字が消える事故を、ソース中の `message("...")` を拾って機械的に防いでいます。
-
-### ビルド
-
-Vite を 2 回走らせて、Service Worker とコンテンツスクリプトをそれぞれ IIFE の 1 ファイルにしています。manifest に `"type": "module"` を書いておらず、`executeScript` の `files` も古典スクリプトとして評価されるので、`import` が残っていると動かないためです。
-
 ## できないこと
 
 - ブラウザ自身が描くもの（ネイティブの右クリックメニュー、`<select>` の選択肢、`title` のツールチップ）は写りません。`captureVisibleTab` はタブの中身しか撮らないからです。Web アプリが HTML で描く独自メニューなら撮れます
@@ -144,4 +93,4 @@ Vite を 2 回走らせて、Service Worker とコンテンツスクリプトを
 
 「範囲を選んで、隠して、貼る」だけの道具ですが、そのぶん一往復で終わります。バグ報告や提案は GitHub の Issue へお願いします。Pull Request は、セキュリティ方針としていまのところ受け付けていません。
 
-このプロジェクトは Claude（Anthropic）を活用して開発しています。
+この拡張の開発と、この記事の文章の作成には、Claude を活用しています。

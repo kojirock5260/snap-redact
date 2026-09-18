@@ -44,4 +44,5 @@ Chrome Web Store のデベロッパーダッシュボードに貼る文面。ダ
 4. 確認が通ったら、Chrome Web Store のダッシュボード → ストアの掲載情報 → 「公式 URL」でそのサイトを選ぶ。
    同じ Google アカウントで Search Console に確認済みのサイトだけが候補に出る
 
-Zenn の記事の下書きは `zenn.md`。記事は他の導線を整えたあとに出す。
+Zenn の記事は 2026-09-18 に公開済み: https://zenn.dev/kojirock/articles/504b403e72b683
+`zenn.md` は公開した版の控え。README（日英）と紹介ページのフッターからリンクしてある。
