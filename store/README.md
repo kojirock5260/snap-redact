@@ -1,7 +1,5 @@
 # ストア掲載用の文面
 
-Microsoft Edge アドオンへの掲載は [edge.md](edge.md) を参照。ロゴ（300×300）は `edge-logo-300.png`。
-
 Chrome Web Store のデベロッパーダッシュボードに貼る文面。ダッシュボードは
 言語ごとに説明文を持てるので、`description.en.txt` を英語に、`description.ja.txt` を
 日本語に入れる。マークダウンは効かないので、見出しは大文字と空行で分けてある。
