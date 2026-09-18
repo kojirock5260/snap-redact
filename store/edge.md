@@ -5,6 +5,13 @@ Chrome 用の zip がそのまま通る。manifest は MV3 で、Edge は Chrome
 
 https://partner.microsoft.com/dashboard/microsoftedge/
 
+## 動作確認
+
+2026-09-18 に macOS の Edge で 1.0.0 を確認済み。Chrome の設定を取り込むと、Edge が Chrome Web Store から
+自動で入れ直す（その状態で試した）。アイコン、右クリックメニュー、`⌘⇧E` のどれからも起動でき、
+範囲選択・要素クリックの黒塗り・コピーまで問題なし。`⌘⇧E` は Edge の「サイドバーで検索」と
+同じキーだが、拡張のほうが優先されて起動した。
+
 ## 入れる項目
 
 | 項目 | 入れる値 |
