@@ -11,9 +11,11 @@ published: false
 **Snap Redact**: 範囲を選んで、隠して、囲って、指して、そのままクリップボードへ。
 
 - Chrome Web Store: https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe
+- 紹介ページ: https://kojirock5260.github.io/snap-redact/
 - GitHub: https://github.com/kojirock5260/snap-redact
 
-![Snap Redact の編集画面。選択範囲の中でメールと電話が黒塗りされ、ボタンに枠と矢印が付いている](https://raw.githubusercontent.com/kojirock5260/snap-redact/main/store/screenshots/01-annotate.png)
+![Snap Redact の編集画面。選択範囲の中でメールと電話が黒塗りされ、ボタンに枠と矢印が付いている](https://kojirock5260.github.io/snap-redact/img/01-annotate.png)
+*編集中の画面。範囲の中で「隠す」「囲う」「矢印」を付けて、⌘C でコピーして終わり*
 
 ## 既存の拡張で困っていたこと
 
@@ -76,6 +78,9 @@ export async function copyPng(blob: Blob): Promise<CopyOutcome> {
 
 マウスを載せている間だけ出るメニューを撮りたいときは、キーボードで起動します。アイコンや右クリックへポインタを動かすとホバーが外れて消えてしまいますが、キーならポインタは載せたままです。
 
+![コピーした画像を GitHub の Issue に貼ったところ](https://kojirock5260.github.io/snap-redact/img/03-pasted.png)
+*貼った先でそのまま。Retina のピクセル数で書き出すので、文字がぼやけません*
+
 ## 実装で工夫したところ
 
 ### 撮影と注入の流れ
@@ -109,6 +114,9 @@ export function rectsUnder(p: Point, host: Element): Rect[] {
     });
 }
 ```
+
+![範囲の中の住所にポインタを載せると点線の枠が出て、クリックするとその要素だけが隠れる](https://kojirock5260.github.io/snap-redact/img/02-click-to-hide.png)
+*「隠す」を持って要素にポインタを載せると点線の枠が出る。クリックでその要素だけが黒くなる*
 
 ページの DOM は書き換えません。矩形を借りて、撮った絵の上に置くだけです。だから見えているものと結果は常に一致します。自動検出もあえて持たせていません。何を隠すかは毎回人が決めます。
 
