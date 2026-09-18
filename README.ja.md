@@ -6,7 +6,7 @@
 
 [![Snap Redact の編集画面。選択範囲の中でメールと電話が黒塗りされ、ボタンに枠と矢印が付いている](store/screenshots/01-annotate.png)](https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe)
 
-[Chrome Web Store からインストール](https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe)
+[Chrome Web Store からインストール](https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe) · [紹介ページ](https://kojirock5260.github.io/snap-redact/)
 
 ## 思想
 

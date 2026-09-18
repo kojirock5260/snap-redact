@@ -36,11 +36,11 @@ Chrome Web Store のデベロッパーダッシュボードに貼る文面。ダ
 `docs/` が紹介ページ。`docs/index.html` 1 枚で、画像は `docs/img/` に置いてある（ストア用と同じもの）。
 外部リソースは読み込まない。言語は `?lang=ja` / `?lang=en` か、無ければブラウザの言語で決まる。
 
-公開の手順:
+2026-09-18 に公開済み: https://kojirock5260.github.io/snap-redact/ （Pages の配信元は `main` の `/docs`）。
+`docs/` に push すれば 1〜2 分で反映される。
 
-1. GitHub のリポジトリ設定 → Pages → Source を「Deploy from a branch」、Branch を `main` / `/docs` にする
-   （`gh api -X POST repos/kojirock5260/snap-redact/pages -f 'source[branch]=main' -f 'source[path]=/docs'` でも同じ）
-2. 数分後に https://kojirock5260.github.io/snap-redact/ で開ける
+所有権確認と公式 URL は保留中。やるときの手順:
+
 3. Search Console（https://search.google.com/search-console）で「URL プレフィックス」としてその URL を追加し、
    「HTML タグ」の確認方法で出るトークンを `docs/index.html` の `google-site-verification` のコメントに入れて push
 4. 確認が通ったら、Chrome Web Store のダッシュボード → ストアの掲載情報 → 「公式 URL」でそのサイトを選ぶ。

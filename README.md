@@ -7,7 +7,7 @@ A Chrome extension.
 
 [![Snap Redact while editing: email and phone blacked out inside the selection, a button boxed, an arrow pointing at another](store/screenshots/01-annotate.png)](https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe)
 
-[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe)
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/snap-redact/nfbcdbkbgboollbanfadblakbihlkbpe) · [Website](https://kojirock5260.github.io/snap-redact/)
 
 ## Principles
 
