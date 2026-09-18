@@ -1,5 +1,10 @@
 # Microsoft Edge アドオンへの掲載
 
+> **保留中（2026-09-18）。** Partner Center の登録フォームの住所欄に「利用者が開発者プロフィールで見る住所」と
+> 書かれており、個人の住所が公開される可能性を否定できなかったため、登録を完了せずに中止した。
+> 公式ドキュメントは「連絡先は Microsoft からの連絡用」としているが、フォームのほうが新しい。
+> 公開して構わない住所ができたら再開する。Edge の利用者は Chrome Web Store から今でも入れられる。
+
 Chrome 用の zip がそのまま通る。manifest は MV3 で、Edge は Chrome と同じ版番号を使うので
 `minimum_chrome_version` もそのまま効く。必要なのは Partner Center の登録（Microsoft アカウント）だけ。
 
