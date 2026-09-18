@@ -30,3 +30,20 @@ Chrome Web Store のデベロッパーダッシュボードに貼る文面。ダ
 - 小さいプロモタイル（440×280）は任意だが、検索結果とカテゴリ一覧に出るので用意しておくと目立つ
 - 「プライバシーへの取り組み」の欄は `PRIVACY.md` の内容と一致させる。データを収集しない、
   リモートコードを使わない、の 2 点にチェック
+
+## 紹介ページ（GitHub Pages）と公式 URL
+
+`docs/` が紹介ページ。`docs/index.html` 1 枚で、画像は `docs/img/` に置いてある（ストア用と同じもの）。
+外部リソースは読み込まない。言語は `?lang=ja` / `?lang=en` か、無ければブラウザの言語で決まる。
+
+公開の手順:
+
+1. GitHub のリポジトリ設定 → Pages → Source を「Deploy from a branch」、Branch を `main` / `/docs` にする
+   （`gh api -X POST repos/kojirock5260/snap-redact/pages -f 'source[branch]=main' -f 'source[path]=/docs'` でも同じ）
+2. 数分後に https://kojirock5260.github.io/snap-redact/ で開ける
+3. Search Console（https://search.google.com/search-console）で「URL プレフィックス」としてその URL を追加し、
+   「HTML タグ」の確認方法で出るトークンを `docs/index.html` の `google-site-verification` のコメントに入れて push
+4. 確認が通ったら、Chrome Web Store のダッシュボード → ストアの掲載情報 → 「公式 URL」でそのサイトを選ぶ。
+   同じ Google アカウントで Search Console に確認済みのサイトだけが候補に出る
+
+Zenn の記事の下書きは `zenn.md`。記事は他の導線を整えたあとに出す。
